@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/src/scheduler/ticker.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:vac/graph.dart';
+import 'package:vac/node.dart';
 
 void main() => runApp(const SceneContainer());
 
@@ -15,13 +17,14 @@ final class SceneContainer extends StatelessWidget {
      */
     screenWidth = MediaQuery.sizeOf(context).width;
     screenHeight = MediaQuery.sizeOf(context).height;
-    centerOffset = Offset(0.45 * screenWidth, 0.45 * screenHeight);
+    centerOffset = Offset(0.455 * screenWidth, 0.455 * screenHeight);
     return Container(
       color: Colors.white,
       child: Center(
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(strokeAlign: 1, color: Colors.black, width: 1),
+            border: Border.all(strokeAlign: 1, color: Colors.black, width: 4),
+            borderRadius: BorderRadius.all(Radius.circular(5)),
           ),
           height: screenHeight * 0.95,
           width: screenWidth * 0.95,
@@ -35,11 +38,11 @@ final class SceneContainer extends StatelessWidget {
 final class Ball {
   late Offset position;
   late Offset v;
+  final double spawnRadius = screenWidth * 0.1;
   Ball.random() {
-    position = Offset(
-      screenWidth * Random().nextDouble(),
-      screenHeight * Random().nextDouble(),
-    );
+    final double radiant = 2 * pi * Random().nextDouble();
+    position = centerOffset;
+    // position += Offset(spawnRadius * cos(radiant), spawnRadius * sin(radiant));
     v = position - centerOffset;
   }
 }
@@ -67,7 +70,11 @@ class _SceneState extends State<Scene>
   @override
   void initState() {
     super.initState();
-    for (int i = 0; i < 1; i++) {
+    /**
+     * Count of the balls
+     */
+    const int ballsCount = 1;
+    for (int i = 0; i < ballsCount; i++) {
       balls.add(Ball.random());
     }
     _ticker = createTicker(
@@ -92,16 +99,23 @@ class _SceneState extends State<Scene>
   );
 
   void onTick(double deltaTime) {
+    /**
+     * Animation by itself
+     */
     return;
     for (Ball ball in balls) {
-      ball.position += ball.v * 0.5 * deltaTime;
-      ball.v *= 0.99;
+      ball.position += ball.v * 0.2 * deltaTime;
       final Offset deltaBallVec = (ball.v + ball.position) - centerOffset;
       final Offset deltaBallPos = ball.position - centerOffset;
 
+      /**
+       * Border and angle invert.
+       */
+      return;
       double vecLen(Offset vec) {
         return sqrt(pow(vec.dy, 2) + pow(vec.dx, 2));
       }
+
       if (vecLen(deltaBallPos) <= vecLen(deltaBallVec)) {
         if (ball.position.dx < 0) {
           ball.v = Offset(ball.v.dx * -1, ball.v.dy);
@@ -135,8 +149,8 @@ final class ScenePainter extends CustomPainter {
     for (Ball ball in balls) {
       canvas.drawCircle(ball.position, 10, paint);
 
-      canvas.drawCircle((ball.v * 0.3) + ball.position, 2, paint);
-      canvas.drawLine((ball.v * 0.3) + ball.position, ball.position, paint);
+      // canvas.drawCircle((ball.v * 0.3) + ball.position, 3, paint);
+      // canvas.drawLine((ball.v * 0.3) + ball.position, ball.position, paint);
     }
   }
 
