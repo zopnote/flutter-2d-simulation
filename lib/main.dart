@@ -41,11 +41,11 @@ final class Ball {
     final double radiant = 2 * pi * Random().nextDouble();
     position = centerOffset;
     direction = Offset.zero;
-    /// TODO: Punkte auf einem Kreis um das Zentrum
-    // position += Offset(spawnRadius * cos(radiant), spawnRadius * sin(radiant));
+    /// TODO: Punkte auf einem Kreis um das Zentrum (#2)
+    position += Offset(spawnRadius * cos(radiant), spawnRadius * sin(radiant));
 
-    /// TODO: Ein Vektor als Direktion und kontinuierliche Bewegung
-    // direction = Offset(sceneWidth * Random().nextDouble(), sceneHeight * Random().nextDouble());
+    /// TODO: Ein Vektor als Direktion und kontinuierliche Bewegung (#3)
+    direction = Offset(sceneWidth * Random().nextDouble(), sceneHeight * Random().nextDouble());
   }
 }
 
@@ -86,8 +86,8 @@ class _SceneState extends State<Scene>
   void initState() {
     super.initState();
 
-    /// TODO: Menge der Bälle innerhalb der Simulation
-    const int ballsCount = 1;
+    /// TODO: Menge der Bälle innerhalb der Simulation (#1)
+    const int ballsCount = 5;
     for (int i = 0; i < ballsCount; i++) {
       balls.add(Ball.random());
     }
@@ -106,11 +106,8 @@ class _SceneState extends State<Scene>
 
 
   void onTick(double deltaTime) {
-    /**
-     * Animation by itself
-     */
     for (Ball ball in balls) {
-      /// TODO: Aufsummierung eines Teils des Vektors zur Bewegungssimulation
+      /// TODO: Aufsummierung eines Teils des Vektors zur Bewegungssimulation (#4)
       ball.position += ball.direction * 0.2 * deltaTime;
 
       /**
@@ -122,32 +119,48 @@ class _SceneState extends State<Scene>
       final Offset deltaBallVec = (ball.direction + ball.position) - centerOffset;
       final Offset deltaBallPos = ball.position - centerOffset;
 
-      /// TODO: Abstand zwischen zwei Punkten im Raum
+      /// TODO: Abstand zwischen zwei Punkten im Raum (#5)
       double vecLen(Offset vec) {
         return sqrt(pow(vec.dy, 2) + pow(vec.dx, 2));
       }
 
-      /// TODO: Invertierung eines Vektors zur Simulation von Abstoßungsprozessen
+      /// TODO: Invertierung eines Vektors zur Simulation von Abstoßungsprozessen (#6)
       if (vecLen(deltaBallPos) <= vecLen(deltaBallVec)) {
+        const double ballRadius = 10.0;
+        final double minX = ballRadius;
+        final double maxX = sceneWidth * 0.95 - ballRadius;
+        final double minY = ballRadius;
+        final double maxY = sceneHeight * 0.95 - ballRadius;
+
         /**
          * On the left and right sides, the vector will be inverted on the opposite
          * side, therefore, only the x-coordinate gets inverted around the y-axis.
          */
-        if (ball.position.dx < 0) {
-          ball.direction = Offset(ball.direction.dx * -1, ball.direction.dy);
-        } else if (ball.position.dx > sceneWidth * 0.95) {
-          ball.direction = Offset(ball.direction.dx * -1, ball.direction.dy);
+        if (ball.position.dx <= minX) {
+          ball.position = Offset(minX, ball.position.dy);
+          ball.direction = Offset(-ball.direction.dx, ball.direction.dy);
+        } else if (ball.position.dx >= maxX) {
+          ball.position = Offset(maxX, ball.position.dy);
+          ball.direction = Offset(-ball.direction.dx, ball.direction.dy);
         }
         /**
          * On the bottom and top, the vector will be inverted on the opposite,
          * therefore, only the y-coordinate gets inverted around the x-axis.
          */
-        if (ball.position.dy < 0) {
-          ball.direction = Offset(ball.direction.dx, ball.direction.dy * -1);
-        } else if (ball.position.dy > sceneHeight * 0.95) {
-          ball.direction = Offset(ball.direction.dx, ball.direction.dy * -1);
+        if (ball.position.dy <= minY) {
+          ball.position = Offset(ball.position.dx, minY);
+          ball.direction = Offset(ball.direction.dx, -ball.direction.dy);
+        } else if (ball.position.dy >= maxY) {
+          ball.position = Offset(ball.position.dx, maxY);
+          ball.direction = Offset(ball.direction.dx, -ball.direction.dy);
         }
       }
+      /// TODO: Gravitation zwischen den Bällen (#7)
+      // for (Ball partner in balls) {
+      //   if (vecLen(partner.position - ball.position) > 40) {
+      //     partner.direction += ((partner.position - ball.position) * 0.05);
+      //   }
+      // }
     }
   }
 }
@@ -169,8 +182,9 @@ final class ScenePainter extends CustomPainter {
     for (Ball ball in balls) {
       canvas.drawCircle(ball.position, 10, paint);
 
-      // canvas.drawCircle((ball.v * 0.3) + ball.position, 3, paint);
-      // canvas.drawLine((ball.v * 0.3) + ball.position, ball.position, paint);
+      /// TODO: Punkte auf einem Kreis um das Zentrum (#2)
+      canvas.drawCircle((ball.direction * 0.3) + ball.position, 3, paint);
+      canvas.drawLine((ball.direction * 0.3) + ball.position, ball.position, paint);
     }
   }
 
