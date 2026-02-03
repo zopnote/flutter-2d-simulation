@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:vac/graph.dart';
-import 'package:vac/node.dart';
 
 void main() => runApp(const SceneContainer());
 
@@ -15,19 +13,19 @@ final class SceneContainer extends StatelessWidget {
      * [screenWidth], [screenHeight] and [centerOffset] have to be initialized
      * before [Ball] get's constructed.
      */
-    screenWidth = MediaQuery.sizeOf(context).width;
-    screenHeight = MediaQuery.sizeOf(context).height;
-    centerOffset = Offset(0.455 * screenWidth, 0.455 * screenHeight);
+    sceneWidth = MediaQuery.sizeOf(context).width;
+    sceneHeight = MediaQuery.sizeOf(context).height;
+    centerOffset = Offset(0.455 * sceneWidth, 0.455 * sceneHeight);
     return Container(
       color: Colors.white,
       child: Center(
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(strokeAlign: 1, color: Colors.black, width: 4),
-            borderRadius: BorderRadius.all(Radius.circular(5)),
+            border: Border.all(strokeAlign: 1, color: Colors.black, width: 1),
+            borderRadius: BorderRadius.all(Radius.circular(15)),
           ),
-          height: screenHeight * 0.95,
-          width: screenWidth * 0.95,
+          height: sceneHeight * 0.95,
+          width: sceneWidth * 0.95,
           child: const Scene(),
         ),
       ),
@@ -37,18 +35,22 @@ final class SceneContainer extends StatelessWidget {
 
 final class Ball {
   late Offset position;
-  late Offset v;
-  final double spawnRadius = screenWidth * 0.1;
+  late Offset direction;
+  final double spawnRadius = sceneWidth * 0.1;
   Ball.random() {
     final double radiant = 2 * pi * Random().nextDouble();
     position = centerOffset;
+    direction = Offset.zero;
+    /// TODO: Punkte auf einem Kreis um das Zentrum
     // position += Offset(spawnRadius * cos(radiant), spawnRadius * sin(radiant));
-    v = position - centerOffset;
+
+    /// TODO: Ein Vektor als Direktion und kontinuierliche Bewegung
+    // direction = Offset(sceneWidth * Random().nextDouble(), sceneHeight * Random().nextDouble());
   }
 }
 
-late double screenWidth;
-late double screenHeight;
+late double sceneWidth;
+late double sceneHeight;
 late Offset centerOffset;
 
 final class Scene extends StatefulWidget {
@@ -60,23 +62,38 @@ final class Scene extends StatefulWidget {
 
 class _SceneState extends State<Scene>
     implements SingleTickerProviderStateMixin<Scene> {
+
   final List<Ball> balls = [];
-  late final Ticker _ticker;
-  Duration _lastElapsed = Duration.zero;
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    isComplex: true,
+    willChange: true,
+    painter: ScenePainter(
+      width: sceneWidth,
+      height: sceneHeight,
+      balls: balls,
+    ),
+  );
 
   @override
   Ticker createTicker(TickerCallback onTick) => Ticker(onTick);
 
+
+  late final Ticker _ticker;
+  Duration _lastElapsed = Duration.zero;
+
   @override
   void initState() {
     super.initState();
-    /**
-     * Count of the balls
-     */
+
+    /// TODO: Menge der Bälle innerhalb der Simulation
     const int ballsCount = 1;
     for (int i = 0; i < ballsCount; i++) {
       balls.add(Ball.random());
     }
+    /**
+     * Scheduler simulation tick loop. [deltaTime] in seconds.
+     */
     _ticker = createTicker(
       (elapsed) => setState(() {
         final double deltaTime = (elapsed - _lastElapsed).inMicroseconds / 1e6;
@@ -87,45 +104,48 @@ class _SceneState extends State<Scene>
     _ticker.start();
   }
 
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    isComplex: true,
-    willChange: true,
-    painter: ScenePainter(
-      width: screenWidth,
-      height: screenHeight,
-      balls: balls,
-    ),
-  );
 
   void onTick(double deltaTime) {
     /**
      * Animation by itself
      */
-    return;
     for (Ball ball in balls) {
-      ball.position += ball.v * 0.2 * deltaTime;
-      final Offset deltaBallVec = (ball.v + ball.position) - centerOffset;
-      final Offset deltaBallPos = ball.position - centerOffset;
+      /// TODO: Aufsummierung eines Teils des Vektors zur Bewegungssimulation
+      ball.position += ball.direction * 0.2 * deltaTime;
 
       /**
-       * Border and angle invert.
+       * Distance between the center and the position of the ball
+       * as well as the distance between the center and the position of the
+       * vector to determine if the vector has to be inverted to come
+       * back in the scene from out-of-bounds.
        */
-      return;
+      final Offset deltaBallVec = (ball.direction + ball.position) - centerOffset;
+      final Offset deltaBallPos = ball.position - centerOffset;
+
+      /// TODO: Abstand zwischen zwei Punkten im Raum
       double vecLen(Offset vec) {
         return sqrt(pow(vec.dy, 2) + pow(vec.dx, 2));
       }
 
+      /// TODO: Invertierung eines Vektors zur Simulation von Abstoßungsprozessen
       if (vecLen(deltaBallPos) <= vecLen(deltaBallVec)) {
+        /**
+         * On the left and right sides, the vector will be inverted on the opposite
+         * side, therefore, only the x-coordinate gets inverted around the y-axis.
+         */
         if (ball.position.dx < 0) {
-          ball.v = Offset(ball.v.dx * -1, ball.v.dy);
-        } else if (ball.position.dx > screenWidth * 0.95) {
-          ball.v = Offset(ball.v.dx * -1, ball.v.dy);
+          ball.direction = Offset(ball.direction.dx * -1, ball.direction.dy);
+        } else if (ball.position.dx > sceneWidth * 0.95) {
+          ball.direction = Offset(ball.direction.dx * -1, ball.direction.dy);
         }
+        /**
+         * On the bottom and top, the vector will be inverted on the opposite,
+         * therefore, only the y-coordinate gets inverted around the x-axis.
+         */
         if (ball.position.dy < 0) {
-          ball.v = Offset(ball.v.dx, ball.v.dy * -1);
-        } else if (ball.position.dy > screenHeight * 0.95) {
-          ball.v = Offset(ball.v.dx, ball.v.dy * -1);
+          ball.direction = Offset(ball.direction.dx, ball.direction.dy * -1);
+        } else if (ball.position.dy > sceneHeight * 0.95) {
+          ball.direction = Offset(ball.direction.dx, ball.direction.dy * -1);
         }
       }
     }
